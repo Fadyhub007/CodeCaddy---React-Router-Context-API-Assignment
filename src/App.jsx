@@ -5,6 +5,7 @@ import SearchPage from './pages/SearchPage'
 import CollectionPage from './pages/CollectionPage'
 import BookDetailsPage from './pages/BookDetailsPage'
 import './App.css'
+import './index.css'
 
 function App() {
   return (
