@@ -11,8 +11,8 @@ const sampleBooks = [
     publishedDate: '1925',
     pageCount: 180,
     imageLinks: {
-      thumbnail: 'https://via.placeholder.com/128x192/4a90e2/ffffff?text=Book'
-    }
+      thumbnail: 'https://via.placeholder.com/128x192/4a90e2/ffffff?text=Book',
+    },
   },
   {
     id: '2',
@@ -22,83 +22,61 @@ const sampleBooks = [
     publishedDate: '1960',
     pageCount: 281,
     imageLinks: {
-      thumbnail: 'https://via.placeholder.com/128x192/7ed321/ffffff?text=Book'
-    }
-  }
+      thumbnail: 'https://via.placeholder.com/128x192/7ed321/ffffff?text=Book',
+    },
+  },
 ]
 
-// TODO: Students need to add these missing interfaces:
-// 
-// interface BookCollectionState {
-//   books: Book[]
-//   isLoading: boolean
-//   error: string | null
-//   searchResults: Book[]
-//   currentlyReading: Book[]
-//   wantToRead: Book[]
-//   haveRead: Book[]
-// }
-//
-// interface BookCollectionActions {
-//   addBook: (book: Book) => void
-//   removeBook: (bookId: string) => void
-//   updateBookStatus: (bookId: string, status: BookStatus) => void
-//   searchBooks: (query: string) => Promise<void>
-//   clearSearch: () => void
-// }
-//
-// interface BookCollectionHelpers {
-//   getBookById: (id: string) => Book | undefined
-//   getBooksByStatus: (status: BookStatus) => Book[]
-//   getTotalBooks: () => number
-//   getReadingProgress: () => { completed: number; total: number }
-// }
-
-// Simplified context for starter version
+// ✅ Context setup
 const BookCollectionContext = createContext()
 
-// Simple reducer - students will expand this
 function bookCollectionReducer(state, action) {
   switch (action.type) {
     case 'ADD_BOOK':
       return {
         ...state,
-        books: [...state.books, { ...action.payload, status: 'want-to-read' }]
+        books: [...state.books, { ...action.payload, status: 'want-to-read' }],
       }
     case 'REMOVE_BOOK':
       return {
         ...state,
-        books: state.books.filter(book => book.id !== action.payload)
+        books: state.books.filter((book) => book.id !== action.payload),
       }
     case 'UPDATE_BOOK_STATUS':
       return {
         ...state,
-        books: state.books.map(book =>
+        books: state.books.map((book) =>
           book.id === action.payload.id
             ? { ...book, status: action.payload.status }
             : book
-        )
+        ),
       }
     case 'SET_SEARCH_RESULTS':
       return {
         ...state,
-        searchResults: action.payload
+        searchResults: action.payload,
+      }
+    case 'CLEAR_SEARCH':
+      return {
+        ...state,
+        searchResults: [],
       }
     default:
       return state
   }
 }
 
-// Initial state
 const initialState = {
-  books: sampleBooks.map(book => ({ ...book, status: 'want-to-read' })),
-  searchResults: []
+  books: sampleBooks.map((book) => ({ ...book, status: 'want-to-read' })),
+  searchResults: [],
+  isLoading: false,
+  error: null,
 }
 
 export function BookCollectionProvider({ children }) {
   const [state, dispatch] = useReducer(bookCollectionReducer, initialState)
 
-  // Basic actions - students will expand these
+  // 🎯 Actions
   const addBook = (book) => {
     dispatch({ type: 'ADD_BOOK', payload: book })
   }
@@ -111,56 +89,66 @@ export function BookCollectionProvider({ children }) {
     dispatch({ type: 'UPDATE_BOOK_STATUS', payload: { id: bookId, status } })
   }
 
-  // Simplified search - students will implement Google Books API
+  const clearSearch = () => {
+    dispatch({ type: 'CLEAR_SEARCH' })
+  }
+
   const searchBooks = async (query) => {
     try {
-      console.log('Searching for:', query)
-      
-      // Use real Google Books API
       const result = await searchGoogleBooks(query)
-      
-      // Add status field to search results
-      const booksWithStatus = result.items.map(book => ({
+      const booksWithStatus = result.items.map((book) => ({
         ...book,
-        status: 'want-to-read'
+        status: 'want-to-read',
       }))
-      
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: booksWithStatus })
-      
     } catch (error) {
       console.error('Search failed:', error)
-      // Fallback to mock results if API fails
       const mockResults = [
         {
           id: `search-${Date.now()}`,
           title: `Search Result: ${query}`,
           authors: ['Sample Author'],
-          description: 'This is a mock search result (API may be unavailable)',
+          description: 'Mock result (API may be unavailable)',
           publishedDate: '2023',
           pageCount: 200,
           imageLinks: {
-            thumbnail: 'https://via.placeholder.com/128x192/ff6b6b/ffffff?text=Search'
-          }
-        }
+            thumbnail: 'https://via.placeholder.com/128x192/ff6b6b/ffffff?text=Search',
+          },
+        },
       ]
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: mockResults })
     }
+  }
+
+  // 🧭 Helper functions
+  const getBookById = (id) => state.books.find((book) => book.id === id)
+  const getBooksByStatus = (status) => state.books.filter((b) => b.status === status)
+  const getTotalBooks = () => state.books.length
+  const getReadingProgress = () => {
+    const completed = state.books.filter((b) => b.status === 'have-read').length
+    const total = state.books.length
+    return { completed, total }
   }
 
   const value = {
     // State
     books: state.books,
     searchResults: state.searchResults,
-    
+    isLoading: state.isLoading,
+    error: state.error,
+
     // Actions
     addBook,
     removeBook,
     updateBookStatus,
     searchBooks,
-    
-    // Helper functions - students will implement these
-    getBooksByStatus: (status) => state.books.filter(book => book.status === status),
-    getTotalBooks: () => state.books.length
+    clearSearch,
+
+    // Helpers
+    getBookById,
+    getBooksByStatus,
+    getTotalBooks,
+    getReadingProgress,
   }
 
   return (
